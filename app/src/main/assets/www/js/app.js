@@ -36,12 +36,18 @@
 
   var STATE_TEXT = {
     idle: '待机',
+    sleep: '休眠中',
     connecting: '连接中',
     reconnecting: '重连中',
     listening: '在听',
     thinking: '思考中',
     speaking: '说话中',
     error: '出错了'
+  };
+
+  var STATE_HINT = {
+    sleep: '走近一点，我就醒了',
+    idle: '说句话，试着和我聊聊'
   };
 
   function setState(s) {
@@ -51,10 +57,11 @@
     el.status.className = 'status ' + s;
     el.statusText.textContent = STATE_TEXT[s] || s;
 
-    var showHint = (s === 'idle');
-    el.hint.classList.toggle('show', showHint);
-
-    if (s === 'speaking' || s === 'thinking') {
+    var hint = STATE_HINT[s];
+    if (hint) {
+      el.hint.textContent = hint;
+      el.hint.classList.add('show');
+    } else {
       el.hint.classList.remove('show');
     }
   }
@@ -228,8 +235,8 @@
     }
 
     if (loadedConfig && loadedConfig.apiKey && loadedConfig.workspaceId) {
-      setState('connecting');
-      bridge.start();
+      // 有配置：先休眠，等人走近由原生唤醒（不再自动连接）
+      setState('sleep');
     } else {
       openSettings(loadedConfig);
       setState('idle');

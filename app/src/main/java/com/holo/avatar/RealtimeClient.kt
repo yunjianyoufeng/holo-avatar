@@ -180,6 +180,27 @@ class RealtimeClient(
         ws?.send(JSONObject().put("type", "response.cancel").toString())
     }
 
+    /**
+     * 唤醒问候：让模型主动说一句欢迎语。
+     * 设备没有系统 TTS 时用这个兜底。
+     */
+    fun greetWelcome() {
+        if (!ready) return
+        val item = JSONObject().apply {
+            put("type", "conversation.item.create")
+            put("item", JSONObject().apply {
+                put("type", "message")
+                put("role", "user")
+                put("content", org.json.JSONArray().put(JSONObject().apply {
+                    put("type", "input_text")
+                    put("text", "（有人刚走到展柜前，请用一句话主动打招呼，语气自然，不要提到这条提示）")
+                }))
+            })
+        }
+        ws?.send(item.toString())
+        ws?.send(JSONObject().put("type", "response.create").toString())
+    }
+
     fun close() {
         closedByUser = true
         ready = false
