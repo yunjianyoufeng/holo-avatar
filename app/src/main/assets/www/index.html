@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>全息数字人</title>
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+  <!-- 形象渲染层 -->
+  <canvas id="stage"></canvas>
+
+  <!-- 扫描线与暗角，纯 CSS 合成，不占渲染循环 -->
+  <div class="scanlines"></div>
+  <div class="vignette"></div>
+
+  <!-- 顶部状态 -->
+  <div class="hud-top">
+    <div id="status" class="status"><span class="dot"></span><span id="statusText">启动中</span></div>
+  </div>
+
+  <!-- 字幕 -->
+  <div id="caption" class="caption"></div>
+
+  <!-- 待机提示 -->
+  <div id="hint" class="hint">说句话，试着和我聊聊</div>
+
+  <!-- 设置面板 -->
+  <div id="settings" class="sheet hidden">
+    <div class="sheet-inner">
+      <h2>设备配置</h2>
+
+      <label>Workspace ID</label>
+      <input id="f-workspace" type="text" placeholder="例如 llm-xxxxxxxxxxxx" autocomplete="off">
+
+      <label>API Key</label>
+      <input id="f-key" type="password" placeholder="sk-..." autocomplete="off">
+
+      <label>地域</label>
+      <select id="f-region">
+        <option value="cn-beijing">北京</option>
+        <option value="ap-southeast-1">新加坡</option>
+      </select>
+
+      <label>音色</label>
+      <input id="f-voice" type="text" placeholder="Tina" autocomplete="off">
+
+      <label>人设（System Prompt）</label>
+      <textarea id="f-instructions" rows="5"></textarea>
+
+      <div class="row">
+        <button id="btn-save" class="primary">保存并开始</button>
+        <button id="btn-cancel">取消</button>
+      </div>
+
+      <p class="tip">
+        提示：长按屏幕 5 秒可重新打开此面板。
+        Key 仅保存在本机，请勿在公共设备上使用长期 Key。
+      </p>
+    </div>
+  </div>
+
+  <script src="js/avatar.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
