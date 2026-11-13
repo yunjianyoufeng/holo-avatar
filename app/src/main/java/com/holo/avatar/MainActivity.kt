@@ -86,6 +86,9 @@ class MainActivity : android.app.Activity(), LifecycleOwner {
 
     private var presentFrames = 0
 
+    @Volatile
+    private var wakeBlockedUntil = 0L
+
     // ---------------- TTS ----------------
     private var tts: TextToSpeech? = null
 
@@ -180,7 +183,23 @@ class MainActivity : android.app.Activity(), LifecycleOwner {
                 if (config.isReady()) emitState("sleep") else emitState("need_config")
             }
         }
-        web.webChromeClient = WebChromeClient()
+        web.webChromeClient = object : WebChromeClient() {
+            // WebView 默认会吞掉 JS 的 alert，这里补一个原生弹窗，避免"点了没反应"
+            override fun onJsAlert(
+                view: WebView?, url: String?, message: String?, result: android.webkit.JsResult?
+            ): Boolean {
+                try {
+                    android.app.AlertDialog.Builder(this@MainActivity)
+                        .setMessage(message ?: "")
+                        .setPositiveButton("知道了") { _, _ -> result?.confirm() }
+                        .setCancelable(false)
+                        .show()
+                } catch (e: Exception) {
+                    result?.confirm()
+                }
+                return true
+            }
+        }
 
         web.addJavascriptInterface(Bridge(), "HoloBridge")
         web.loadUrl("file:///android_asset/www/index.html")
@@ -324,7 +343,12 @@ class MainActivity : android.app.Activity(), LifecycleOwner {
             presentFrames++
             lastSeenAt = now
             if (presentFrames >= CONFIRM_FRAMES && sleeping) {
-                main.post { wake() }
+                // 一次"出现"只触发一次唤醒；没配置好时 8 秒内不再重复弹面板
+                presentFrames = 0
+                if (now >= wakeBlockedUntil) {
+                    wakeBlockedUntil = now + WAKE_COOLDOWN_MS
+                    main.post { wake() }
+                }
             }
         } else {
             presentFrames = 0
@@ -660,6 +684,7 @@ class MainActivity : android.app.Activity(), LifecycleOwner {
         private const val MAX_YAW = 45f                 // 偏航角超过 45° 视为没正对
         private const val CONFIRM_FRAMES = 2            // 连续 2 帧确认
         private const val ABSENT_TIMEOUT_MS = 40_000L   // 40 秒没脸就断开
+        private const val WAKE_COOLDOWN_MS = 8_000L     // 唤醒尝试的最小间隔
 
         private const val GREETING = "你好呀，我是小橘，有什么想聊的尽管问我。"
     }

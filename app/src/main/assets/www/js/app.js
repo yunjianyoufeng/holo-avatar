@@ -104,13 +104,25 @@
   // ------------------------------------------------------------ 配置
 
   function openSettings(prefill) {
+    // 面板已经打开时不要重置输入，否则用户正在输入的内容会被清空
+    if (!el.sheet.classList.contains('hidden')) return;
+
     var cfg = prefill || {};
     el.workspace.value = cfg.workspaceId || '';
     el.key.value = cfg.apiKey || '';
     el.region.value = cfg.region || 'cn-beijing';
     el.voice.value = cfg.voice || 'Tina';
     el.instructions.value = cfg.instructions || '';
+    showTip('提示：长按屏幕 5 秒可重新打开此面板。Key 仅保存在本机，请勿在公共设备上使用长期 Key。', false);
     el.sheet.classList.remove('hidden');
+  }
+
+  /** 面板底部的提示区，同时用来显示校验错误（WebView 里 alert 不显示） */
+  function showTip(text, isError) {
+    var tip = el.sheet.querySelector('.tip');
+    if (!tip) return;
+    tip.textContent = text;
+    tip.style.color = isError ? '#ff9a9a' : '';
   }
 
   function closeSettings() {
@@ -130,23 +142,41 @@
 
   el.save.addEventListener('click', function () {
     var cfg = currentConfig();
-    if (!cfg.workspaceId || !cfg.apiKey) {
-      alert('Workspace ID 和 API Key 不能为空');
+
+    if (!cfg.workspaceId) {
+      showTip('请填写 Workspace ID：百炼控制台 → 业务空间 → 复制 ws- 开头那一串', true);
       return;
     }
+    if (!cfg.apiKey) {
+      showTip('请填写 API Key：百炼控制台右上角 → API-KEY，sk- 开头', true);
+      return;
+    }
+
     if (bridge) {
-      bridge.saveConfig(JSON.stringify(cfg));
+      var ok = false;
+      try {
+        ok = bridge.saveConfig(JSON.stringify(cfg));
+      } catch (e) {
+        ok = false;
+      }
+      if (!ok) {
+        showTip('保存失败，请重试', true);
+        return;
+      }
       closeSettings();
       setState('connecting');
       bridge.start();
     } else {
-      closeSettings();
-      alert('未检测到原生桥接，无法启动语音链路');
+      showTip('未检测到原生接口，无法启动', true);
     }
   });
 
   el.cancel.addEventListener('click', function () {
     closeSettings();
+    // 没配置好就关掉面板的，1 分钟内不要再自动弹出打断用户
+    if (!loadedConfig || !loadedConfig.apiKey) {
+      suppressUntil = Date.now() + 60000;
+    }
   });
 
   // 长按 5 秒打开配置
@@ -168,6 +198,7 @@
   // ------------------------------------------------------------ 与原生通信
 
   var loadedConfig = null;
+  var suppressUntil = 0;    // 用户主动关掉配置面板后的静默期
 
   window.Holo = {
     onLevel: function (v) {
@@ -185,7 +216,7 @@
       switch (msg.type) {
         case 'state':
           if (msg.state === 'need_config') {
-            openSettings(loadedConfig);
+            if (Date.now() > suppressUntil) openSettings(loadedConfig);
             setState('idle');
           } else {
             if (msg.state === 'listening' && state === 'speaking') {
