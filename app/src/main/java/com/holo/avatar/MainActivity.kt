@@ -3,6 +3,7 @@ package com.holo.avatar
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -46,6 +47,8 @@ class MainActivity : android.app.Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        installCrashHandler()
+
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         setContentView(R.layout.activity_main)
 
@@ -53,6 +56,35 @@ class MainActivity : android.app.Activity() {
         setupWebView()
 
         config = ConfigStore.load(this)
+    }
+
+    /** 记录上一次崩溃，下次启动时显示在屏幕上，方便现场排查 */
+    private fun installCrashHandler() {
+        val prev = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { thread, e ->
+            try {
+                val body = "${e.javaClass.simpleName}: ${e.message}\n" +
+                    e.stackTrace.take(8).joinToString("\n") { "  at $it" }
+                java.io.File(filesDir, CRASH_FILE).writeText(body.take(1200))
+            } catch (_: Exception) {
+            }
+            prev?.uncaughtException(thread, e)
+        }
+    }
+
+    private fun checkLastCrash() {
+        try {
+            val f = java.io.File(filesDir, CRASH_FILE)
+            if (!f.exists()) return
+            val text = f.readText().take(500)
+            f.delete()
+            if (text.isNotBlank()) {
+                emit(
+                    """{"type":"error","message":${JSONObject.quote("上次崩溃：\n$text")}}"""
+                )
+            }
+        } catch (_: Exception) {
+        }
     }
 
     // ---------------------------------------------------------------- WebView
@@ -85,6 +117,7 @@ class MainActivity : android.app.Activity() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 Log.i(TAG, "page finished: $url")
+                checkLastCrash()
             }
         }
         web.webChromeClient = WebChromeClient()
@@ -174,15 +207,19 @@ class MainActivity : android.app.Activity() {
 
             override fun onReady() {
                 retry = 0
-                startAudio()
-                emitState("listening")
+                main.post {
+                    startAudio()
+                    emitState("listening")
+                }
             }
 
             override fun onSpeechStarted() {
                 // 打断：立刻静音并清空待播，口型归零
-                speaker?.flush()
-                emitLevel(0f)
-                main.post { emitState("listening") }
+                main.post {
+                    speaker?.flush()
+                    emitLevel(0f)
+                    emitState("listening")
+                }
             }
 
             override fun onSpeechStopped() {
@@ -252,8 +289,19 @@ class MainActivity : android.app.Activity() {
     }
 
     // ---------------------------------------------------------------- 与 JS 通信
+    //
+    // WebView 的所有方法必须在创建它的线程（主线程）调用，
+    // 否则会抛 "A WebView method was called on thread ..." 直接闪退。
+    // 下面三个方法都做了线程保护，调用方不必关心自己在哪个线程。
 
     private fun emit(json: String) {
+        if (Looper.myLooper() != Looper.getMainLooper()) {
+            main.post { emit(json) }
+            return
+        }
+        if (isFinishing || (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1 && isDestroyed)) {
+            return
+        }
         val js = "window.Holo&&window.Holo.onEvent(${JSONObject.quote(json)})"
         web.evaluateJavascript(js, null)
     }
@@ -269,6 +317,12 @@ class MainActivity : android.app.Activity() {
     }
 
     private fun emitLevel(v: Float) {
+        if (Looper.myLooper() != Looper.getMainLooper()) {
+            main.post { emitLevel(v) }
+            return
+        }
+        if (isFinishing) return
+
         val value = v.coerceIn(0f, 1f)
         if (lastLevel >= 0f && abs(value - lastLevel) < 0.012f && value > 0.01f) return
         lastLevel = value
@@ -324,5 +378,6 @@ class MainActivity : android.app.Activity() {
     companion object {
         private const val TAG = "HoloMain"
         private const val REQ_MIC = 1001
+        private const val CRASH_FILE = "last_crash.txt"
     }
 }
