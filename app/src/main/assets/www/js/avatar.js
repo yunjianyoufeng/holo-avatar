@@ -17,9 +17,9 @@
   // 嘴在图中的相对位置（0~1），换图后需要重新标定
   var MOUTH = {
     x: 0.500,     // 0.5 = 画面水平居中
-    y: 0.470,     // 嘴线所在的高度比例
-    w: 0.072,     // 张嘴最大宽度（相对图宽）
-    h: 0.042      // 张嘴最大高度（相对图宽）
+    y: 0.470,     // 嘴线所在的高度比例（张嘴从这里向下展开）
+    w: 0.098,     // 张嘴最大宽度（相对图宽）
+    h: 0.052      // 张嘴最大高度（相对图宽）
   };
 
   function AvatarStage(canvas) {
@@ -167,15 +167,18 @@
     if (this.mouth <= 0.02) return;
 
     var cx = L.x + L.w * MOUTH.x;
-    var cy = L.y + L.h * MOUTH.y;
+    var lipY = L.y + L.h * MOUTH.y;          // 嘴线（原图的 ω 笑嘴）
 
     var w = L.w * MOUTH.w * (0.55 + 0.45 * this.mouth);
     var h = L.w * MOUTH.h * this.mouth;
 
+    // 关键：椭圆从嘴线开始向下展开，而不是以嘴线为圆心上下各扩一半
+    var cy = lipY + h;
+
     // 口腔
     ctx.save();
     ctx.beginPath();
-    ctx.ellipse(cx, cy + h * 0.35, w, h, 0, 0, TAU);
+    ctx.ellipse(cx, cy, w, h, 0, 0, TAU);
     ctx.fillStyle = '#4E1F16';
     ctx.fill();
     ctx.strokeStyle = 'rgba(120, 52, 30, 0.85)';
@@ -186,10 +189,10 @@
     // 舌头
     ctx.save();
     ctx.beginPath();
-    ctx.ellipse(cx, cy + h * 0.35, w, h, 0, 0, TAU);
+    ctx.ellipse(cx, cy, w, h, 0, 0, TAU);
     ctx.clip();
     ctx.beginPath();
-    ctx.ellipse(cx, cy + h * 1.05, w * 0.62, h * 0.55, 0, 0, TAU);
+    ctx.ellipse(cx, cy + h * 0.62, w * 0.62, h * 0.55, 0, 0, TAU);
     ctx.fillStyle = '#F08F92';
     ctx.fill();
     ctx.restore();
