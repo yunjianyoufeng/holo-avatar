@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 全息形象渲染层 v5：立绘 + 程序化口型。
  *
  * 图片来自美术（assets/www/avatar/cat.png），代码负责：
@@ -18,7 +18,7 @@
   var MOUTH = {
     x: 0.500,     // 0.5 = 画面水平居中
     y: 0.470,     // 嘴线所在的高度比例（张嘴从这里向下展开）
-    w: 0.098,     // 张嘴最大宽度（相对图宽）
+    w: 0.070,     // 张嘴最大宽度（相对图宽）
     h: 0.052      // 张嘴最大高度（相对图宽）
   };
 
@@ -157,9 +157,6 @@
     // 口型
     this._drawMouth(ctx, L);
 
-    // 全息横纹（只覆盖主体区域）
-    this._drawScanlines(ctx, L);
-
     ctx.restore();
   };
 
@@ -169,11 +166,14 @@
     var cx = L.x + L.w * MOUTH.x;
     var lipY = L.y + L.h * MOUTH.y;          // 嘴线（原图的 ω 笑嘴）
 
-    var w = L.w * MOUTH.w * (0.55 + 0.45 * this.mouth);
-    var h = L.w * MOUTH.h * this.mouth;
+    // 口腔的上边缘略高于笑嘴，把原来那条线整个包进去，
+    // 这样任何时候都只看到一张嘴（否则会"两张嘴"）
+    var top = lipY - L.w * 0.010;
+    var bottom = lipY + L.w * MOUTH.h * this.mouth * 1.5;
+    var cy = (top + bottom) / 2;
+    var h = (bottom - top) / 2;
 
-    // 关键：椭圆从嘴线开始向下展开，而不是以嘴线为圆心上下各扩一半
-    var cy = lipY + h;
+    var w = L.w * MOUTH.w * (0.78 + 0.22 * this.mouth);
 
     // 口腔
     ctx.save();
@@ -181,8 +181,8 @@
     ctx.ellipse(cx, cy, w, h, 0, 0, TAU);
     ctx.fillStyle = '#4E1F16';
     ctx.fill();
-    ctx.strokeStyle = 'rgba(120, 52, 30, 0.85)';
-    ctx.lineWidth = Math.max(1.5, L.w * 0.004);
+    ctx.strokeStyle = 'rgba(120, 52, 30, 0.6)';
+    ctx.lineWidth = Math.max(1.2, L.w * 0.003);
     ctx.stroke();
     ctx.restore();
 
@@ -192,7 +192,7 @@
     ctx.ellipse(cx, cy, w, h, 0, 0, TAU);
     ctx.clip();
     ctx.beginPath();
-    ctx.ellipse(cx, cy + h * 0.62, w * 0.62, h * 0.55, 0, 0, TAU);
+    ctx.ellipse(cx, cy + h * 0.72, w * 0.60, h * 0.50, 0, 0, TAU);
     ctx.fillStyle = '#F08F92';
     ctx.fill();
     ctx.restore();
