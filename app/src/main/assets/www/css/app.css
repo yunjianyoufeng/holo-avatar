@@ -31,26 +31,10 @@ html, body {
   display: block;
 }
 
-/* 扫描线：用 CSS 合成，避免每帧重绘 */
+/* 扫描线：早期用于"全息感"，但 screen 混合会把已经很亮的白毛推到过曝，
+   在全息膜上还会被蓝光散射成一片青白。这里关掉，全息感交给形象本身的辉光。 */
 .scanlines {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: repeating-linear-gradient(
-    to bottom,
-    rgba(126, 249, 255, 0.045) 0px,
-    rgba(126, 249, 255, 0.045) 1px,
-    transparent 1px,
-    transparent 3px
-  );
-  mix-blend-mode: screen;
-  animation: scan 8s linear infinite;
-  opacity: 0.7;
-}
-
-@keyframes scan {
-  from { background-position-y: 0; }
-  to   { background-position-y: 120px; }
+  display: none;
 }
 
 .vignette {

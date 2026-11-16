@@ -277,10 +277,12 @@
   setState('idle');
   boot();
 
-  // 预览用：index.html?demo=1 可看"说话中"的样子，方便美工/现场比对
+  // 预览用：index.html?demo=1 看"说话中"的样子，?demo=0.3 可指定张口量
   if (location.search.indexOf('demo') >= 0) {
+    var m = /demo=([0-9.]+)/.exec(location.search);
+    var lv = m ? parseFloat(m[1]) : 0.8;
     setState('speaking');
-    stage.setLevel(0.8);
+    stage.setLevel(lv);
     aiText = '你好，我是这里的全息讲解员，有什么想了解的可以直接问我。';
     renderCaption();
   }

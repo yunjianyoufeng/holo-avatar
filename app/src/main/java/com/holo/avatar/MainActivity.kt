@@ -84,7 +84,7 @@ class MainActivity : android.app.Activity(), LifecycleOwner {
     @Volatile
     private var lastAnalyzed = 0L
 
-    private var presentFrames = 0
+    private var presenceStart = 0L          // 本轮"人一直在"的起始时间
 
     @Volatile
     private var wakeBlockedUntil = 0L
@@ -331,7 +331,7 @@ class MainActivity : android.app.Activity(), LifecycleOwner {
 
         val best = faces.maxByOrNull { it.boundingBox.width() }
         if (best == null) {
-            presentFrames = 0
+            presenceStart = 0L
             return
         }
 
@@ -340,18 +340,18 @@ class MainActivity : android.app.Activity(), LifecycleOwner {
         val facing = abs(yaw) <= MAX_YAW
 
         if (ratio >= FACE_RATIO && facing) {
-            presentFrames++
+            if (presenceStart == 0L) presenceStart = now
             lastSeenAt = now
-            if (presentFrames >= CONFIRM_FRAMES && sleeping) {
-                // 一次"出现"只触发一次唤醒；没配置好时 8 秒内不再重复弹面板
-                presentFrames = 0
-                if (now >= wakeBlockedUntil) {
-                    wakeBlockedUntil = now + WAKE_COOLDOWN_MS
-                    main.post { wake() }
-                }
+
+            // 人必须持续在画面前 WAKE_CONFIRM_MS 才算"来了"，避免路过误唤醒
+            val held = now - presenceStart >= WAKE_CONFIRM_MS
+            if (sleeping && held && now >= wakeBlockedUntil) {
+                wakeBlockedUntil = now + WAKE_COOLDOWN_MS
+                presenceStart = 0L
+                main.post { wake() }
             }
         } else {
-            presentFrames = 0
+            presenceStart = 0L
         }
     }
 
@@ -388,7 +388,7 @@ class MainActivity : android.app.Activity(), LifecycleOwner {
             return
         }
         sleeping = false
-        presentFrames = 0
+        presenceStart = 0L
         lastSeenAt = System.currentTimeMillis()
         greetingPending = true
         micMuted = true
@@ -679,12 +679,12 @@ class MainActivity : android.app.Activity(), LifecycleOwner {
         private const val CRASH_FILE = "last_crash.txt"
 
         // ------- 唤醒参数（现场可调） -------
-        private const val FRAME_INTERVAL_MS = 200L      // 5 fps
-        private const val FACE_RATIO = 0.12f            // 脸宽占画面 12%，约 1.5 米
-        private const val MAX_YAW = 45f                 // 偏航角超过 45° 视为没正对
-        private const val CONFIRM_FRAMES = 2            // 连续 2 帧确认
-        private const val ABSENT_TIMEOUT_MS = 40_000L   // 40 秒没脸就断开
-        private const val WAKE_COOLDOWN_MS = 8_000L     // 唤醒尝试的最小间隔
+        private const val FRAME_INTERVAL_MS = 200L       // 5 fps
+        private const val FACE_RATIO = 0.12f             // 脸宽占画面 12%，约 1.5 米
+        private const val MAX_YAW = 45f                  // 偏航角超过 45° 视为没正对
+        private const val WAKE_CONFIRM_MS = 3_000L       // 人持续停留 3 秒才唤醒
+        private const val ABSENT_TIMEOUT_MS = 10_000L    // 10 秒没脸就断开
+        private const val WAKE_COOLDOWN_MS = 8_000L      // 唤醒尝试的最小间隔
 
         private const val GREETING = "你好呀，我是小橘，有什么想聊的尽管问我。"
     }

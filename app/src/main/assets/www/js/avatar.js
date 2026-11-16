@@ -17,7 +17,7 @@
   // 嘴在图中的相对位置（0~1），换图后需要重新标定
   var MOUTH = {
     x: 0.500,     // 0.5 = 画面水平居中
-    y: 0.470,     // 嘴线所在的高度比例（张嘴从这里向下展开）
+    y: 0.478,     // 嘴线所在的高度比例（张嘴从这里向下展开）
     w: 0.070,     // 张嘴最大宽度（相对图宽）
     h: 0.052      // 张嘴最大高度（相对图宽）
   };
@@ -165,13 +165,13 @@
     var lipY = L.y + L.h * MOUTH.y;
 
     // 原图的 ω 笑嘴已经从素材里抹掉了，改由代码画：
-    // 闭嘴时画笑嘴，张嘴时换成口腔。这样永远只有一张嘴。
-    var smileAlpha = 1 - Math.min(1, this.mouth * 4);
-    if (smileAlpha > 0.02) {
-      var sw = L.w * 0.055;          // 笑嘴半宽
-      var dip = L.w * 0.016;         // 嘴角下垂量
+    // 闭嘴时画笑嘴，张嘴时笑嘴一边缩小一边被口腔盖住，过渡才自然
+    var sm = Math.max(0, 1 - this.mouth * 3);
+    if (sm > 0.02) {
+      var sw = L.w * 0.055 * sm;     // 笑嘴半宽（随张口而缩小）
+      var dip = L.w * 0.016 * sm;    // 嘴角下垂量
       ctx.save();
-      ctx.globalAlpha = smileAlpha;
+      ctx.globalAlpha = sm;
       ctx.strokeStyle = 'rgba(112, 64, 42, 0.92)';
       ctx.lineWidth = Math.max(1.6, L.w * 0.0042);
       ctx.lineCap = 'round';
@@ -186,10 +186,10 @@
     if (this.mouth <= 0.02) return;
 
     // 口腔：胶囊形。宽度随张口量小幅变化，避免小声时变成一条又长又扁的黑杠
-    var halfW = L.w * MOUTH.w * (0.60 + 0.40 * this.mouth);
+    var halfW = L.w * MOUTH.w * (0.45 + 0.55 * this.mouth);
     var top = lipY - L.w * 0.008;
     var bottom = Math.max(
-      lipY + L.w * 0.012,
+      lipY + L.w * 0.009,
       lipY + L.w * MOUTH.h * this.mouth * 1.6
     );
     var r = Math.min((bottom - top) / 2, halfW * 0.85);
