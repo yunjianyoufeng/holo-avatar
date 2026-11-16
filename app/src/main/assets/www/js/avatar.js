@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 全息形象渲染层 v5：立绘 + 程序化口型。
  *
  * 图片来自美术（assets/www/avatar/cat.png），代码负责：
@@ -161,24 +161,41 @@
   };
 
   AvatarStage.prototype._drawMouth = function (ctx, L) {
+    var cx = L.x + L.w * MOUTH.x;
+    var lipY = L.y + L.h * MOUTH.y;
+
+    // 原图的 ω 笑嘴已经从素材里抹掉了，改由代码画：
+    // 闭嘴时画笑嘴，张嘴时换成口腔。这样永远只有一张嘴。
+    var smileAlpha = 1 - Math.min(1, this.mouth * 4);
+    if (smileAlpha > 0.02) {
+      var sw = L.w * 0.055;          // 笑嘴半宽
+      var dip = L.w * 0.016;         // 嘴角下垂量
+      ctx.save();
+      ctx.globalAlpha = smileAlpha;
+      ctx.strokeStyle = 'rgba(112, 64, 42, 0.92)';
+      ctx.lineWidth = Math.max(1.6, L.w * 0.0042);
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(cx - sw, lipY);
+      ctx.quadraticCurveTo(cx - sw * 0.45, lipY + dip, cx, lipY + dip * 0.22);
+      ctx.quadraticCurveTo(cx + sw * 0.45, lipY + dip, cx + sw, lipY);
+      ctx.stroke();
+      ctx.restore();
+    }
+
     if (this.mouth <= 0.02) return;
 
-    var cx = L.x + L.w * MOUTH.x;
-    var lipY = L.y + L.h * MOUTH.y;          // 嘴线（原图的 ω 笑嘴）
+    // 口腔：胶囊形。宽度随张口量小幅变化，避免小声时变成一条又长又扁的黑杠
+    var halfW = L.w * MOUTH.w * (0.60 + 0.40 * this.mouth);
+    var top = lipY - L.w * 0.008;
+    var bottom = Math.max(
+      lipY + L.w * 0.012,
+      lipY + L.w * MOUTH.h * this.mouth * 1.6
+    );
+    var r = Math.min((bottom - top) / 2, halfW * 0.85);
 
-    // 口腔的上边缘略高于笑嘴，把原来那条线整个包进去，
-    // 这样任何时候都只看到一张嘴（否则会"两张嘴"）
-    var top = lipY - L.w * 0.010;
-    var bottom = lipY + L.w * MOUTH.h * this.mouth * 1.5;
-    var cy = (top + bottom) / 2;
-    var h = (bottom - top) / 2;
-
-    var w = L.w * MOUTH.w * (0.78 + 0.22 * this.mouth);
-
-    // 口腔
     ctx.save();
-    ctx.beginPath();
-    ctx.ellipse(cx, cy, w, h, 0, 0, TAU);
+    roundRectPath(ctx, cx - halfW, top, halfW * 2, bottom - top, r);
     ctx.fillStyle = '#4E1F16';
     ctx.fill();
     ctx.strokeStyle = 'rgba(120, 52, 30, 0.6)';
@@ -186,17 +203,35 @@
     ctx.stroke();
     ctx.restore();
 
-    // 舌头
-    ctx.save();
-    ctx.beginPath();
-    ctx.ellipse(cx, cy, w, h, 0, 0, TAU);
-    ctx.clip();
-    ctx.beginPath();
-    ctx.ellipse(cx, cy + h * 0.72, w * 0.60, h * 0.50, 0, 0, TAU);
-    ctx.fillStyle = '#F08F92';
-    ctx.fill();
-    ctx.restore();
+    // 舌头：张口够大时才露，且只占中间一小块，不要拉成一条横线
+    if (this.mouth > 0.18) {
+      ctx.save();
+      roundRectPath(ctx, cx - halfW, top, halfW * 2, bottom - top, r);
+      ctx.clip();
+      var tw = halfW * 0.50;
+      var th = (bottom - top) * 0.40;
+      ctx.beginPath();
+      ctx.ellipse(cx, bottom - th * 0.30, tw, th, 0, 0, TAU);
+      ctx.fillStyle = '#F08F92';
+      ctx.fill();
+      ctx.restore();
+    }
   };
+
+  /** 圆角矩形路径（胶囊形） */
+  function roundRectPath(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
 
   AvatarStage.prototype._drawScanlines = function (ctx, L) {
     ctx.save();
