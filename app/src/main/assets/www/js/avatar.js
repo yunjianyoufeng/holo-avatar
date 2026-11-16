@@ -16,6 +16,7 @@
 
   // 嘴在图中的相对位置（0~1），换图后需要重新标定
   var MOUTH = {
+    enabled: false, // 毛球自带微笑，不做口型
     x: 0.500,     // 0.5 = 画面水平居中
     y: 0.478,     // 嘴线所在的高度比例（张嘴从这里向下展开）
     w: 0.070,     // 张嘴最大宽度（相对图宽）
@@ -55,6 +56,7 @@
     im.onload = function () {
       this.img = im;
       this.imgReady = true;
+      this._buildCache();          // 图片尺寸拿到后重算布局
     }.bind(this);
     im.onerror = function () {
       // 图没加载出来时保持黑屏，避免闪一下报错
@@ -79,16 +81,18 @@
   AvatarStage.prototype._buildCache = function () {
     var W = this.W, H = this.H, ctx = this.ctx;
 
-    // 原图 3:4，柜子 5:8 —— 用"宽度撑满 + 轻微放大"而不是拉伸，
-    // 这样猫的比例不变形，上下多出来的部分用纯黑自然过渡。
-    var scale = W / (this.img ? this.img.width : 618) * 1.06;
-    var dh = (this.img ? this.img.height : 795) * scale;
-    var dy = H * 0.035;                     // 整体略微上移，给底部字幕留空间
+    // 直接用原图的背景：按"铺满屏幕"缩放（cropping 两侧），
+    // 避免上下留出黑边把背景切成一块矩形。
+    var iw = this.img ? this.img.width : 618;
+    var ih = this.img ? this.img.height : 795;
+    var scale = Math.max(W / iw, H / ih);
+    var dw = iw * scale;
+    var dh = ih * scale;
 
     this.layout = {
-      x: (W - (this.img ? this.img.width : 618) * scale) / 2,
-      y: dy,
-      w: (this.img ? this.img.width : 618) * scale,
+      x: (W - dw) / 2,
+      y: (H - dh) / 2,
+      w: dw,
       h: dh
     };
 
@@ -141,7 +145,11 @@
     if (!this.imgReady || !this.img) return;
 
     var L = this.layout;
-    var breathe = Math.sin(t * (TAU / 4.4)) * (H * 0.0035);
+    // 呼吸：说话时频率加快、幅度加大，静音时缓慢起伏。
+    // 毛球没有口型，这是它"正在说话"的唯一动态提示。
+    var period = 4.4 - this.mouth * 2.0;                     // 秒
+    var amp = H * (0.0035 + this.mouth * 0.0065);
+    var breathe = Math.sin(t * (TAU / Math.max(1.6, period))) * amp;
     var sway = Math.sin(t * (TAU / 7.6)) * (W * 0.0016);
 
     ctx.save();
@@ -161,6 +169,7 @@
   };
 
   AvatarStage.prototype._drawMouth = function (ctx, L) {
+    if (!MOUTH.enabled) return;     // 毛球：一直微笑，不做口型
     var cx = L.x + L.w * MOUTH.x;
     var lipY = L.y + L.h * MOUTH.y;
 

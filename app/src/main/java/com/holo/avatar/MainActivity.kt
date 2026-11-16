@@ -686,6 +686,6 @@ class MainActivity : android.app.Activity(), LifecycleOwner {
         private const val ABSENT_TIMEOUT_MS = 10_000L    // 10 秒没脸就断开
         private const val WAKE_COOLDOWN_MS = 8_000L      // 唤醒尝试的最小间隔
 
-        private const val GREETING = "你好呀，我是小橘，有什么想聊的尽管问我。"
+        private const val GREETING = "你好呀，我是毛球，有什么想聊的尽管问我。"
     }
 }
