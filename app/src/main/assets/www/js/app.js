@@ -21,8 +21,32 @@
     voice: document.getElementById('f-voice'),
     instructions: document.getElementById('f-instructions'),
     save: document.getElementById('btn-save'),
-    cancel: document.getElementById('btn-cancel')
+    cancel: document.getElementById('btn-cancel'),
+    tags: document.getElementById('tags'),
+    gear: document.getElementById('btn-settings')
   };
+
+  // 背景上的功能标签：左边两个、右边两个，文案与配色都在这里改
+  var TAG_LEFT = [
+    ['c1', '陪您聊天'],
+    ['c2', '听您说话']
+  ];
+  var TAG_RIGHT = [
+    ['c3', '聊聊家常'],
+    ['c4', '提醒喝水']
+  ];
+
+  (function renderTags() {
+    if (!el.tags) return;
+    var build = function (list) {
+      return list.map(function (t) {
+        return '<span class="tag"><i class="' + t[0] + '"></i>' + t[1] + '</span>';
+      }).join('');
+    };
+    el.tags.innerHTML =
+      '<div class="tag-col left">' + build(TAG_LEFT) + '</div>' +
+      '<div class="tag-col right">' + build(TAG_RIGHT) + '</div>';
+  })();
 
   var stage = new AvatarStage(document.getElementById('stage'));
   stage.start();
@@ -63,6 +87,11 @@
       el.hint.classList.add('show');
     } else {
       el.hint.classList.remove('show');
+    }
+
+    // 说话时把标签压暗一点，避免和字幕抢注意力
+    if (el.tags) {
+      el.tags.classList.toggle('dim', s === 'speaking' || s === 'thinking');
     }
   }
 
@@ -178,6 +207,14 @@
       suppressUntil = Date.now() + 60000;
     }
   });
+
+  // 右上角齿轮：直接打开配置面板
+  if (el.gear) {
+    el.gear.addEventListener('click', function (e) {
+      e.stopPropagation();
+      openSettings(loadedConfig);
+    });
+  }
 
   // 长按 5 秒打开配置
   var pressTimer = null;

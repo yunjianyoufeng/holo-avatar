@@ -246,7 +246,98 @@ html, body {
   color: rgba(140, 190, 210, 0.55);
 }
 
-/* ---------- 浅色背景（形象自带亮底）时的可读性 ---------- */
+/* ---------- 功能标签 ---------- */
+.tags {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transition: opacity 0.4s;
+}
+
+.tags.dim {
+  opacity: 0.35;
+}
+
+.tag-col {
+  position: absolute;
+  top: 14%;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+.tag-col.left {
+  left: 6%;
+  align-items: flex-start;
+}
+
+.tag-col.right {
+  right: 6%;
+  align-items: flex-end;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 18px 9px 14px;
+  font-size: 15px;
+  letter-spacing: 1.5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(214, 140, 175, 0.42);
+  color: #7a3f58;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 16px rgba(190, 110, 150, 0.12);
+}
+
+.tag i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  box-shadow: 0 0 10px currentColor;
+}
+
+.tag .c1 { background: #e06a96; color: #e06a96; }
+.tag .c2 { background: #f0a15e; color: #f0a15e; }
+.tag .c3 { background: #b77cc4; color: #b77cc4; }
+.tag .c4 { background: #6fbfa6; color: #6fbfa6; }
+
+/* ---------- 右上角设置按钮：透明，只留图标 ---------- */
+.gear {
+  position: absolute;
+  top: 4.2vh;
+  right: 5.5%;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: #8a4a66;
+  opacity: 0.72;
+  filter: drop-shadow(0 1px 3px rgba(255, 255, 255, 0.9));
+  transition: transform 0.15s, opacity 0.2s;
+}
+
+.gear:active {
+  transform: scale(0.92);
+  opacity: 1;
+}
+
+/* ---------- 深色形象时的样式 ---------- */
+body:not(.light) .tag {
+  background: rgba(10, 24, 32, 0.55);
+  border-color: rgba(126, 249, 255, 0.22);
+  color: #a9e8f5;
+}
+body:not(.light) .gear {
+  background: transparent;
+  color: #9fe6f5;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.85));
+}
 body.light .status {
   background: rgba(255, 255, 255, 0.62);
   border-color: rgba(196, 120, 160, 0.45);

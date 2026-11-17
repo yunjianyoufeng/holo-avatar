@@ -146,11 +146,11 @@
 
     var L = this.layout;
     // 呼吸：说话时频率加快、幅度加大，静音时缓慢起伏。
-    // 毛球没有口型，这是它"正在说话"的唯一动态提示。
-    var period = 4.4 - this.mouth * 2.0;                     // 秒
-    var amp = H * (0.0035 + this.mouth * 0.0065);
-    var breathe = Math.sin(t * (TAU / Math.max(1.6, period))) * amp;
-    var sway = Math.sin(t * (TAU / 7.6)) * (W * 0.0016);
+    // 毛球没有口型，这是它"正在说话"的唯一动态提示（幅度刻意做得很小）
+    var period = 4.6 - this.mouth * 1.4;                     // 秒
+    var amp = H * (0.0018 + this.mouth * 0.0032);
+    var breathe = Math.sin(t * (TAU / Math.max(2.2, period))) * amp;
+    var sway = Math.sin(t * (TAU / 8.4)) * (W * 0.0009);
 
     ctx.save();
     ctx.translate(sway, breathe);
